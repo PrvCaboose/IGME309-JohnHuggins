@@ -61,8 +61,26 @@ void MyMesh::GenerateCone(float a_fRadius, float a_fHeight, int a_nSubdivisions,
 	Init();
 
 	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
+	//GenerateCube(a_fRadius * 2.0f, a_v3Color);
 	// -------------------------------
+
+	// Generate the base
+	std::vector<vector3 > vertex;
+	float theta = 0;
+	float delta = static_cast<float>(2.0 * PI / static_cast<float>(a_nSubdivisions));
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		vector3 temp = vector3(cos(theta) * a_fRadius, sin(theta) * a_fRadius, a_fHeight * -0.5f);
+		theta += delta;
+		vertex.push_back(temp);
+	}
+
+	// Add the base and sides
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		AddTri(vector3(0, 0, a_fHeight * 0.5f), vertex[i], vertex[(i + 1) % a_nSubdivisions]);
+		AddTri(vertex[i], vector3(0, 0, a_fHeight * -0.5f), vertex[(i + 1) % a_nSubdivisions]);
+	}
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
@@ -85,8 +103,29 @@ void MyMesh::GenerateCylinder(float a_fRadius, float a_fHeight, int a_nSubdivisi
 	Init();
 
 	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
-	// -------------------------------
+
+	std::vector<vector3> vertex;
+	std::vector<vector3> vertexBase;
+	float theta = 0;
+	float delta = static_cast<float>(2.0 * PI / static_cast<float>(a_nSubdivisions));
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		vector3 temp = vector3(cos(theta) * a_fRadius, sin(theta) * a_fRadius, a_fHeight * -0.5f);
+		vertex.push_back(temp);
+
+		vector3 baseTemp = vector3(cos(theta) * a_fRadius, sin(theta) * a_fRadius, a_fHeight * 0.5f);
+		vertexBase.push_back(baseTemp);
+
+		theta += delta;
+	}
+
+	// Add the base and sides
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		AddTri(vertexBase[(i + 1) % a_nSubdivisions], vector3(0, 0, a_fHeight * 0.5f), vertexBase[i]);
+		AddQuad(vertex[i], vertex[(i + 1) % a_nSubdivisions], vertexBase[i], vertexBase[(i + 1) % a_nSubdivisions]);
+		AddTri(vertex[i], vector3(0, 0, a_fHeight * -0.5f), vertex[(i + 1) % a_nSubdivisions]);
+	}
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
@@ -115,7 +154,45 @@ void MyMesh::GenerateTube(float a_fOuterRadius, float a_fInnerRadius, float a_fH
 	Init();
 
 	// Replace this with your code
-	GenerateCube(a_fOuterRadius * 2.0f, a_v3Color);
+	std::vector<vector3> vertex;
+	std::vector<vector3> vertexBase;
+	std::vector<vector3> vertexInnerTop;
+	std::vector<vector3> vertexInnerBottom;
+
+	float theta = 0;
+	float delta = static_cast<float>(2.0 * PI / static_cast<float>(a_nSubdivisions));
+
+	// Get subdivisions
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		// Bottom outer points
+		vector3 temp = vector3(cos(theta) * (a_fInnerRadius), sin(theta) * (a_fInnerRadius), a_fHeight * -0.5f);
+		vertex.push_back(temp);
+
+		// Top outer points
+		vector3 baseTemp = vector3(cos(theta) * (a_fInnerRadius), sin(theta) * (a_fInnerRadius), a_fHeight * 0.5f);
+		vertexBase.push_back(baseTemp);
+
+		// Top inner points
+		vector3 innerTop = vector3(cos(theta) * a_fOuterRadius, sin(theta) * a_fOuterRadius, a_fHeight * 0.5f);
+		vertexInnerTop.push_back(innerTop);
+
+		// Bottom inner points
+		vector3 innerBottom = vector3(cos(theta) * a_fOuterRadius, sin(theta) * a_fOuterRadius, a_fHeight * -0.5f);
+		vertexInnerBottom.push_back(innerBottom);
+
+		theta += delta;
+	}
+
+	// Add all parts
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		AddQuad(vertexInnerBottom[i], vertexInnerBottom[(i + 1) % a_nSubdivisions], vertexInnerTop[i], vertexInnerTop[(i + 1) % a_nSubdivisions]);
+		AddQuad(vertexBase[i], vertexBase[(i + 1) % a_nSubdivisions], vertex[i], vertex[(i + 1) % a_nSubdivisions]);
+		AddQuad(vertex[i], vertex[(i + 1) % a_nSubdivisions], vertexInnerBottom[i], vertexInnerBottom[(i + 1) % a_nSubdivisions]);
+		AddQuad(vertexInnerTop[i], vertexInnerTop[(i + 1) % a_nSubdivisions], vertexBase[i], vertexBase[(i + 1) % a_nSubdivisions]);
+	}
+
 	// -------------------------------
 
 	// Adding information about color
@@ -147,7 +224,42 @@ void MyMesh::GenerateTorus(float a_fOuterRadius, float a_fInnerRadius, int a_nSu
 	Init();
 
 	// Replace this with your code
-	GenerateCube(a_fOuterRadius * 2.0f, a_v3Color);
+
+	std::vector<vector3> vertex;
+	std::vector<vector3> vertexBase;
+	std::vector<vector3> innerBase;
+	float theta = 0;
+	float delta = static_cast<float>(2.0 * PI / static_cast<float>(a_nSubdivisionsA));
+	float theta2 = 0;
+	float delta2 = static_cast<float>(2.0 * PI / static_cast<float>(a_nSubdivisionsB));
+
+	float tubeRadius = ((a_fOuterRadius - a_fInnerRadius) / 2);
+
+	// Use parametrical equations for a taurus
+	for (int i = 0; i < a_nSubdivisionsA; i++)
+	{
+		for (int j = 0; j < a_nSubdivisionsB; j++)
+		{
+			vector3 temp = vector3((a_fInnerRadius + tubeRadius * cos(theta)) * cos(theta2),
+				(a_fInnerRadius + tubeRadius * cos(theta)) * sin(theta2),
+				tubeRadius * sin(theta));
+			vertex.push_back(temp);
+			theta2 += delta2;
+		}
+		theta += delta;
+	}
+
+
+	// Add the quads
+	for (int i = 0; i < a_nSubdivisionsA; i++) {
+		int i_next = (i + 1) % a_nSubdivisionsA;
+		for (int j = 0; j < a_nSubdivisionsB; j++) {
+			int j_next = (j + 1) % a_nSubdivisionsB;
+			AddQuad(vertex[i_next * a_nSubdivisionsB + j_next], vertex[i * a_nSubdivisionsB + j_next],
+				vertex[i_next * a_nSubdivisionsB + j], vertex[i * a_nSubdivisionsB + j]);
+
+		}
+	}
 	// -------------------------------
 
 	// Adding information about color
@@ -172,7 +284,39 @@ void MyMesh::GenerateSphere(float a_fRadius, int a_nSubdivisions, vector3 a_v3Co
 	Init();
 
 	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
+	std::vector<vector3> vertex;
+	std::vector<vector3> vertexBase;
+	float theta = 0;
+	float delta = static_cast<float>(2.0 * PI / static_cast<float>(a_nSubdivisions));
+	float theta2 = 0;
+	float delta2 = static_cast<float>(2.0 * PI / static_cast<float>(a_nSubdivisions));
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		for (int j = 0; j < a_nSubdivisions; j++)
+		{
+			vector3 temp = vector3(a_fRadius * sin(PI * i / a_nSubdivisions) * cos(2 * PI * j / a_nSubdivisions),
+				a_fRadius * sin(PI * i / a_nSubdivisions) * sin(2 * PI * j / a_nSubdivisions),
+				a_fRadius * cos(PI * i / a_nSubdivisions));
+			vertex.push_back(temp);
+
+			theta2 += delta2;
+		}
+		theta += delta;
+	}
+
+	// Add the base and sides
+	for (int i = 0; i < a_nSubdivisions; i++) {
+		int i_next = (i + 1) % a_nSubdivisions;
+		for (int j = 0; j < a_nSubdivisions; j++) {
+			int j_next = (j + 1) % a_nSubdivisions;
+			AddQuad(vertex[i_next * a_nSubdivisions + j_next],
+				vertex[i * a_nSubdivisions + j_next],
+				vertex[i_next * a_nSubdivisions + j],
+				vertex[i * a_nSubdivisions + j]);
+
+		}
+	}
+
 	// -------------------------------
 
 	// Adding information about color
@@ -325,7 +469,7 @@ void MyMesh::Render(matrix4 a_mProjection, matrix4 a_mView, matrix4 a_mModel)
 {
 	// Use the buffer and shader
 	GLuint nShader = m_pShaderMngr->GetShaderID("Basic");
-	glUseProgram(nShader); 
+	glUseProgram(nShader);
 
 	//Bind the VAO of this object
 	glBindVertexArray(m_VAO);
@@ -337,11 +481,11 @@ void MyMesh::Render(matrix4 a_mProjection, matrix4 a_mView, matrix4 a_mModel)
 	//Final Projection of the Camera
 	matrix4 m4MVP = a_mProjection * a_mView * a_mModel;
 	glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(m4MVP));
-	
+
 	//Solid
 	glUniform3f(wire, -1.0f, -1.0f, -1.0f);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glDrawArrays(GL_TRIANGLES, 0, m_uVertexCount);  
+	glDrawArrays(GL_TRIANGLES, 0, m_uVertexCount);
 
 	//Wire
 	glUniform3f(wire, 1.0f, 0.0f, 1.0f);
